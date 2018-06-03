@@ -1,0 +1,56 @@
+Первый слайд
+The Five Factor Model of personality traits (the Big Five, also known as the
+OCEAN or CANOE model) is currently among the most used personality traits
+models. Questionnaires based on its factors (Neuroticism, Extraversion, Open-
+ness to experience, Agreeableness and Conscientiousness) are widely used in
+scientific and industrial applications that require personality diagnosis.
+The major drawback of existing questionnaires is their size - it ranges from 44 items
+to 240 items. Size makes research more difficult especially in Internet-based cases where lack of outside control (usually provided by researchers in offline cases) and participant’s preference to skip tedious tasks condone random response or quitting.
+A number of studies suggest 10-item personality questionnaires as brief diagnostic tools for they have satisfying psychometric performance. 
+Currently there are two competing Russian adaptations for Ten Item Personality Inventory questionnaire, KOBT and TIPI-RU. Their performance in convergent validity is similar. For the current study TIPI-RU, our adaptation, is considered a better alternative.
+Второй слайд
+Questionnaires are a viable tool in modern psychological research but to be
+useful they have to be validated in a number of ways. Usual questionnaire val-
+idation pipeline involves a test for internal consistency, construct validity and
+reliability. Our research is centered around second issue, construct
+validity. Construct validity shows how well the questionnaire can generalize, to
+what degree the measures that the questionnaire provides can be applied to
+estimate the characteristics of psychological model.
+Construct validity is categorized into convergent and discriminant validity:
+1. Convergent validity - ”Are two theoretically related ways of estimating the
+same characteristic really related?”;
+2. Discriminant validity - ”Are two theoretically unrelated ways of estimating
+the same characteristic really unrelated?”;
+Both types of validity are important to investigate the construct validity of a
+questionnaire. Convergent and discriminant validation ensure that the question-
+naire does precisely what it is made to do - provides a way to test a psychological
+model experimentally.
+Третий слайд
+In this study we provide a novel approach to construct validity evaluation. It
+is based on usage of neural network to predict characteristics of well-established
+questionnaire from items of the questionnaire under investigation. Unlike other approaches,
+like path model, ours is not quantitative but rather qualitative. The data and source code are available on GitHub. This approach (as far as we know) is the first ever attempt to use neural networks for investigation of construct validity.
+Четвертый слайд
+Our sample consists of 457 participants who have completed both TIPI and Khromov's 5PFQ. They are mostly students from ITMO University. 218 of them were taken from our previous research on TIPI adaptation into Russian. The previous sample and our sample are freely available on GitHub. The age groups are shown on the picture.
+Пятый слайд
+TIPI-RU characteristics are computed from the corresponding items using these formulae. "Reverse" means taking the opposite value on 7-point Likert scale. For example, 1 becomes 7, 2 becomes 6 and so on. Note the reversal of TIPI 2 at Agreeableness, we will need it later. These formulae can be rewritten as the following neural network (with linear or rectified linear activation function). The nonzero weights and corresponding axons (connections between neurons) are shown at the picture. The network has one input layer, one hidden layer and one output layer. The hidden layer computes weighted sum of the inputs, then activation function. The output layer outputs weighted sum of its inputs (almost all of which have weight 0, and only relevant input has a weight of 0.5). This is theoretical neural network which can perform TIPI-RU computations. This (and any, for that matter) particular network is very hard to reach by gradient descent because there may be a lot of other networks that provide the same result. We are free to choose any configuration that is at least remotely reasonable (one clearly should not use 100-layer ResNet for that, but that as much guideline as there is). 
+Шестой слайд
+The actual network that learns TIPI-RU to 5PFQ connection is shown on that slide. It has a single two dimensional convolutional layer which is output layer (so it is small fully convolutional network) and a couple of reshaping layer that are needed to transform the input in a suitable manner. The first InputLayer is a placeholder for the input data - answers to TIPI-RU questionnaire. The second layer, Reshape is transforming the input layers into five-channel two-pixel images. It is a technical transformation which I will not explain in details. The third layer performs convolution with rectified linear activation function (ReLU). And the fourth layer turns the output of convolution into five predictions of corresponding 5PFQ answer.
+Седьмой слайд
+Let's talk about the training behavior of network. We make a reasonable assumptions that the best predictions of 5PFQ one can make with a good not overfitted model from the TIPI-RU items is the TIPI-RU values themselves given that TIPI-RU values and 5PFQ values are transformed to the same scale. Any model that performs better then that threshold is overfitting and by definition remembers all training examples with no ability to compute predictions for any example not from training set. The best MSE (mean squared error) possible is achieved at about 60th epoch of training, as you can see on the picture. The grey area denotes difference between the best and worst loss function on that epoch and the black line is average loss on that epoch. The number of trained models is 100. The dashed dark grey line shows the best MSE possible.
+Восьмой слайд
+To test the presence of a connection between TIPI-RU items and 5PFQ characteristics we use permutation testing. It proceeds as follows:
+1. We train 100 models on the correctly labelled data. The models differ in initialization so they give slightly different results in terms of mean squared error and mean absolute error. This way we get a distribution of metric on correctly labelled data.
+2. Then we train 100 models on data where we have randomly permuted the labels. This way we get a distribution of metric on permuted data that posess no connection. We have destroyed any kind of connection between the instance and label using random permutation of labels.
+3. We can compare two distributions graphically and using two-sample Kolmogorov-Smirnov test.
+4. If the connection is present we will observe divergence of two distributions as the training goes on.
+5. The divergence is enough to show convergent validity for it shows the relatedness of TIPI-RU answers and 5PFQ characteristics.
+As you can see on the plots, on the first epoch the distributions are indistinguishable. But as the training goes on, the distribution of correct values (shown as dark grey histogram) moves to zero while light gray permuted one stays the same.
+Девятый слайд.
+Kolmogorov-Smirnov test shows the same behavior. Null hypothesis here is that two samples (of losses computed on correct and permuted labels) come from the same distribution. We reject the null hypothesis when p-value goes below the thresholds (of 0.1, 0.05, 0.01, 0.001). As you can see it does during training and quite fast.
+Десятый слайд.
+The last thing to show is that from trained model we can derive not only the way to investigate convergent validity, but also discriminant one. From definition of convolution one can see that the convolutional layer adapts its weight to structure present in training data. From this standpoint one can design various ways of weight interpretation but for our simple case we need only the simplest one: let's plot weights and see whether the structure of TIPI-RU can be seen. 
+The leftmost picture shows the weight at the beginning of training and they are pretty random.
+The middle picture shows some emergent structure. This structure is at its finest in the rightmost picture (end of training). It is similar to the presumed TIPI-RU. As you can see, the first neuron corresponds to Extraversion, it highlights as black the first TIPI item and as white the second. Second neuron clearly corresponds to Agreeableness. Note the color reversal. It is the captured reversal of TIPI 2 instead of TIPI 7. The last neuron corresponds to openness and you can see the mess of equally colored squares. It shows the inconsistency of openness which was noted by the authors of TIPI, the numerous scientists that have adapted it into various languages and also by ourselves in our own adaptation.
+Those visualizations show that only relevant items relate to the characteristics thus showing both convergent and divergent validity.
+This method provides fast and simple (compute model - visualize weights) way to check the construct validity of a questionnaire using neural network. We have demonstrated it using TIPI-RU but it can be used in other settings. Our major drawback is that we can't compare it with quantitative methods like correlations and path models because it is qualitative. We also can't use RMSE or AIC to do it because at the end of training the model is overfitted which is ok for us (we even want it because the structure is at its finest in this case) but will give perfect RMSE and AIC and other metrics thus rendering them useless. Nevertheless, the approach gives a brief way to check construct validity qualitatively.
